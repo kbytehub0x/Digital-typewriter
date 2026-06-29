@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type — Digital Typewriter</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2f, #2a1b40, #1a365d);
+            --paper-color: #fbfaf5;
+            --text-color: #2b2b2b;
+            --pin-bg: #fff9db;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 20px;
+        }
+
+        /* Pinned Tasks Sidebar */
+        .pinned-sidebar {
+            flex: 1;
+            background: var(--pin-bg);
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border-left: 5px solid #fcc419;
+            height: fit-content;
+        }
+
+        .pinned-sidebar h3 {
+            margin-top: 0;
+            color: #873600;
+            border-bottom: 1px dashed #fcc419;
+            padding-bottom: 5px;
+        }
+
+        .pinned-textarea {
+            width: 100%;
+            height: 200px;
+            background: transparent;
+            border: none;
+            resize: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #4a4a4a;
+            outline: none;
+        }
+
+        /* Main Typewriter Paper */
+        .paper-container {
+            flex: 2.5;
+            position: relative;
+        }
+
+        .date-badge {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        .paper {
+            background: var(--paper-color);
+            width: 100%;
+            min-height: 600px;
+            padding: 40px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .paper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 30px;
+            width: 1px;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.2);
+        }
+
+        .typewriter-textarea {
+            width: 100%;
+            min-height: 520px;
+            background: transparent;
+            border: none;
+            resize: none;
+            outline: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 2;
+            color: var(--text-color);
+            padding-left: 10px;
+            box-sizing: border-box;
+        }
+
+        .footer-status {
+            margin-top: 15px;
+            color: rgba(255,255,255,0.6);
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="date-badge" id="current-date-display">Loading Date...</div>
+
+    <div class="container">
+        <!-- Pinned Items Option -->
+        <div class="pinned-sidebar">
+            <h3>📌 Pinned Tasks / Notes</h3>
+            <textarea class="pinned-textarea" id="pinned-input" placeholder="Type items here that you want to keep permanent across days..."></textarea>
+        </div>
+
+        <!-- Daily Writing Paper -->
+        <div class="paper-container">
+            <div class="paper">
+                <textarea class="typewriter-textarea" id="typewriter-input" placeholder="Start typing your tasks for today..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-status" style="max-width: 1100px;">
+        <span id="char-count">Characters: 0</span>
+        <span id="save-status">Saved</span>
+    </div>
+
+    <script>
+        const typewriterInput = document.getElementById('typewriter-input');
+        const pinnedInput = document.getElementById('pinned-input');
+        const dateDisplay = document.getElementById('current-date-display');
+        const charCount = document.getElementById('char-count');
+        const saveStatus = document.getElementById('save-status');
+
+        // Get snapshot of today's date string (YYYY-MM-DD format)
+        const getTodayString = () => {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+
+        const todayKey = `typewriter_${getTodayString()}`;
+
+        // Initialize and Check Setup
+        function init() {
+            // Display friendly layout date
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateDisplay.textContent = new Date().toLocaleDateString('en-US', options);
+
+            // Load today's specific page text
+            const savedTodayText = localStorage.getItem(todayKey);
+            if (savedTodayText) {
+                typewriterInput.value = savedTodayText;
+            }
+
+            // Load permanent pinned messages
+            const savedPinnedText = localStorage.getItem('typewriter_pinned_notes');
+            if (savedPinnedText) {
+                pinnedInput.value = savedPinnedText;
+            }
+
+            updateCharCount();
+        }
+
+        function updateCharCount() {
+            charCount.textContent = `Characters: ${typewriterInput.value.length}`;
+        }
+
+        function triggerSaveFlash() {
+            saveStatus.textContent = "Saving...";
+            setTimeout(() => {
+                saveStatus.textContent = "Saved";
+            }, 300);
+        }
+
+        // Event Listeners for Automatic Typing Saves
+        typewriterInput.addEventListener('input', () => {
+            localStorage.setItem(todayKey, typewriterInput.value);
+            updateCharCount();
+            triggerSaveFlash();
+        });
+
+        pinnedInput.addEventListener('input', () => {
+            localStorage.setItem('typewriter_pinned_notes', pinnedInput.value);
+            triggerSaveFlash();
+        });
+
+        // Run on load
+        init();
+    </script>
+</body>
+</html>
